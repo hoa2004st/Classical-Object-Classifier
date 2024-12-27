@@ -2,6 +2,7 @@ import pickle
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
+import math
 
 def training_set():
     training_images = []
@@ -76,6 +77,67 @@ def visualize(image, label):
     plt.show()
     return
 
-i = 15
-visualize(training_images[i], training_labels[i])
+# i = 20
+# visualize(training_images[i], training_labels[i])
 
+def calculate_hu_moments(image_batch):
+    hu_moments_batch = []
+
+    for image in image_batch:
+        gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+
+        moments = cv2.moments(gray_image)
+        hu_moments = cv2.HuMoments(moments).flatten()
+        for i in range(0,7):
+            hu_moments[i] = -1* math.copysign(1.0, hu_moments[i]) * math.log10(abs(hu_moments[i]))
+        hu_moments_batch.append(hu_moments)
+
+    hu_moments_batch = np.array(hu_moments_batch)
+
+    return hu_moments_batch
+
+# hu_moments_batch = calculate_hu_moments(training_images)
+# print(hu_moments_batch.shape)
+
+def compute_phog(image, num_bins=8, pyramid_levels=3):
+    gray_image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+    gx = cv2.Sobel(gray_image, cv2.CV_64F, 1, 0, ksize=3)
+    gy = cv2.Sobel(gray_image, cv2.CV_64F, 0, 1, ksize=3)
+
+    magnitude, angle = cv2.cartToPolar(gx, gy, angleInDegrees=True)
+    
+    bin_edges = np.linspace(0, 360, num_bins + 1)
+    angle_bins = np.digitize(angle, bin_edges) - 1
+
+    phog_features = []
+
+    for level in range(pyramid_levels):
+        num_cells = 2 ** level
+        cell_height = gray_image.shape[0] // num_cells
+        cell_width = gray_image.shape[1] // num_cells
+
+        for i in range(num_cells):
+            for j in range(num_cells):
+                cell_magnitude = magnitude[i*cell_height:(i+1)*cell_height, j*cell_width:(j+1)*cell_width]
+                cell_angle_bins = angle_bins[i*cell_height:(i+1)*cell_height, j*cell_width:(j+1)*cell_width]
+
+                hist = np.zeros(num_bins, dtype=np.float32)
+                for b in range(num_bins):
+                    hist[b] = np.sum(cell_magnitude[cell_angle_bins == b])
+
+                hist /= (np.sum(hist) + 1e-6)
+                phog_features.extend(hist)
+    return np.array(phog_features)
+
+def calculate_phog_batch(image_batch, num_bins=8, pyramid_levels=3):
+    phog_batch = []
+    for image in image_batch:
+        phog_features = compute_phog(image, num_bins, pyramid_levels)
+        phog_batch.append(phog_features)
+
+    phog_batch = np.array(phog_batch)
+    return phog_batch
+
+phog_batch = calculate_phog_batch(training_images)
+print(phog_batch.shape)

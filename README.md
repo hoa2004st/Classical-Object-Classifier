@@ -11,4 +11,5 @@ These are the steps you need to follow to Rerun this code:
 1. Create a folder
 2. Download CIFAR-10 Dataset and then extract to your folder (https://www.cs.toronto.edu/~kriz/cifar.html).
 3. Clone this repository to your folder
-4. Run all cell in visualize.ipynb
+4. Write absolute path in "feature_extractor.py" to extract data from the folder 
+5. Run all cell in visualize.ipynb

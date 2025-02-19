@@ -4,6 +4,7 @@ import cv2
 import matplotlib.pyplot as plt
 import math
 
+# data_folder = insert absolute path of "cifar-10-batches-py"
 data_folder = 'C:/Hofa/ComVis/Exercises/Proj2.1/cifar-10-batches-py'
 def training_set():
     training_images = []
